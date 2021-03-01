@@ -278,27 +278,15 @@ def download_video(date: Date) -> None:
     merge_video_segments(date, num_video_segments)
     print('Video\'s segments merged.')
     print()
-    # print('Deleting useless files...')
+    print('Deleting useless files...')
     # delete_tmp_dir(date)
-    # delete_tmp_audio_files()
-    # print('Useless files deleted.')
+    delete_tmp_audio_files()
+    print('Useless files deleted.')
     # print()
     print('Video is ready to play!')
     #video_dir_path = f'{config.downloads_dir_path}/{date.year}_{date.month}_{date.day}'
     #video_dir_abs_path = os.path.abspath(video_dir_path)
     # os.startfile(video_dir_abs_path)
-
-
-def display_video_on_colab(date: Date) -> None:
-    video_file_path = f'{config.downloads_dir_path}/{date.year}_{date.month}_{date.day}/video.mp4'
-    with open(video_file_path, 'rb') as fp:
-        video_data = fp.read()
-    video_data_url = "data:video/mp4;base64," + b64encode(video_data).decode()
-    HTML("""
-    <video width=400 controls>
-        <source src="%s" type="video/mp4">
-    </video>
-    """ % video_data_url)
 
 
 def interact():
@@ -312,9 +300,6 @@ def interact():
         # os.startfile(video_dir_abs_path)
     else:
         download_video(date)
-    print('Preparing video display...')
-    display_video_on_colab(date)
-    print('Video display ready!')
 
 
 if __name__ == '__main__':
