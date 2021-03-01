@@ -315,7 +315,9 @@ def interact():
         # os.startfile(video_dir_abs_path)
     else:
         download_video(date)
+    print('Preparing video display...')
     display_video_on_colab(date)
+    print('Video display ready!')
 
 
 if __name__ == '__main__':
