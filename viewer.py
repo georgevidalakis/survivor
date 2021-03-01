@@ -17,7 +17,7 @@ def progress(value, max_value):
         <progress
             value='{value}'
             max='{max_value}',
-            style='width: 100px'
+            style='width: 600px'
         >
             {value}
         </progress>
