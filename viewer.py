@@ -177,7 +177,7 @@ def is_video_segment_converted_check(date: Date, video_segment_id: int) -> bool:
 def get_video_segments_ids_to_download(date: Date, num_video_segments: int) -> List[int]:
     return [
         video_segment_id
-        for video_segment_id in range(num_video_segments + 1)
+        for video_segment_id in range(num_video_segments)
         if not is_video_segment_downloaded_check(date, video_segment_id)
     ]
 
@@ -185,7 +185,7 @@ def get_video_segments_ids_to_download(date: Date, num_video_segments: int) -> L
 def get_video_segments_ids_to_convert(date: Date, num_video_segments: int) -> List[int]:
     return [
         video_segment_id
-        for video_segment_id in range(num_video_segments + 1)
+        for video_segment_id in range(num_video_segments)
         if not is_video_segment_converted_check(date, video_segment_id)
     ]
 
@@ -220,7 +220,7 @@ def merge_video_segments(date: Date, num_video_segments: int) -> None:
     video_mp4_files_dir = f'{config.tmp_dir_path}/{date.year}_{date.month}_{date.day}/mp4'
     video_segments_as_clips = [
         moviepy.editor.VideoFileClip(f'{video_mp4_files_dir}/{video_segment_id}.mp4')
-        for video_segment_id in range(num_video_segments + 1)
+        for video_segment_id in range(num_video_segments)
     ]
     video_as_clip = moviepy.editor.concatenate_videoclips(video_segments_as_clips)
     video_file_path = f'{config.downloads_dir_path}/{date.year}_{date.month}_{date.day}/video.mp4'
