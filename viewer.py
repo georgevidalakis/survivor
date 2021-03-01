@@ -115,10 +115,7 @@ def is_downloaded_check(date: Date) -> bool:
 
 
 def get_base_url(date: Date) -> str:
-    year_str = f'{date.year:02d}'
-    month_str = f'{date.month:02d}'
-    day_str = f'{date.day:02d}'
-    return f'https://videostream.skai.gr/skaivod/_definst_/mp4:skai/GrCyTargeting/Gr/Survivor/survivor{year_str}{month_str}{day_str}xxxx.mp4/media_'
+    return f'https://videostream.skai.gr/skaivod/_definst_/mp4:skai/GrCyTargeting/Gr/Survivor/survivor{date.year}{date.month}{date.day}xxxx.mp4/media_'
 
 
 def download_video_segment(base_url: str, video_segment_id: int) -> Optional[bytes]:
