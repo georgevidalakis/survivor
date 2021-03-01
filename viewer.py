@@ -291,7 +291,7 @@ def download_video(date: Date) -> None:
     # os.startfile(video_dir_abs_path)
 
 
-if __name__ == '__main__':
+def interact():
     print()
     date = read_date()
     print()
@@ -302,3 +302,7 @@ if __name__ == '__main__':
         # os.startfile(video_dir_abs_path)
     else:
         download_video(date)
+
+
+if __name__ == '__main__':
+    interact()
