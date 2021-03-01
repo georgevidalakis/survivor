@@ -246,8 +246,8 @@ def download_video(date: Date) -> None:
     print('Video found!')
     print()
     print('Computing video\'s duration...')
-    # num_video_segments = get_num_video_segments(base_url)
-    num_video_segments = 10
+    num_video_segments = get_num_video_segments(base_url)
+    # num_video_segments = 10
     estimated_video_duration_secs = get_approx_secs_by_num_video_segments(num_video_segments)
     estimated_video_duration = Duration(estimated_video_duration_secs)
     print(f'Estimated video duration: {estimated_video_duration}')
