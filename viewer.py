@@ -7,6 +7,7 @@ import time
 import shutil
 import urllib.request
 import moviepy.editor
+from base64 import b64encode
 from typing import List, Optional
 from IPython.display import HTML, display
 
@@ -46,9 +47,9 @@ class Date(object):
     __slots__ = ['year', 'month', 'day']
 
     def __init__(self, year: int, month: int, day: int):
-        self.year = year
-        self.month = month
-        self.day = day
+        self.year = f'{year:02d}'
+        self.month = f'{month:02d}'
+        self.day = f'{day:02d}'
 
 
 class Duration(object):
@@ -280,15 +281,27 @@ def download_video(date: Date) -> None:
     merge_video_segments(date, num_video_segments)
     print('Video\'s segments merged.')
     print()
-    print('Deleting useless files...')
-    delete_tmp_dir(date)
-    delete_tmp_audio_files()
-    print('Useless files deleted.')
-    print()
+    # print('Deleting useless files...')
+    # delete_tmp_dir(date)
+    # delete_tmp_audio_files()
+    # print('Useless files deleted.')
+    # print()
     print('Video is ready to play!')
-    video_dir_path = f'{config.downloads_dir_path}/{date.year}_{date.month}_{date.day}'
-    video_dir_abs_path = os.path.abspath(video_dir_path)
+    #video_dir_path = f'{config.downloads_dir_path}/{date.year}_{date.month}_{date.day}'
+    #video_dir_abs_path = os.path.abspath(video_dir_path)
     # os.startfile(video_dir_abs_path)
+
+
+def display_video_on_colab(date: Date) -> None:
+    video_file_path = f'{config.downloads_dir_path}/{date.year}_{date.month}_{date.day}/video.mp4'
+    with open(video_file_path, 'rb') as fp:
+        video_data = fp.read()
+    video_data_url = "data:video/mp4;base64," + b64encode(video_data).decode()
+    HTML("""
+    <video width=400 controls>
+        <source src="%s" type="video/mp4">
+    </video>
+    """ % video_data_url)
 
 
 def interact():
@@ -302,6 +315,7 @@ def interact():
         # os.startfile(video_dir_abs_path)
     else:
         download_video(date)
+    display_video_on_colab(date)
 
 
 if __name__ == '__main__':
