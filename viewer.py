@@ -20,7 +20,7 @@ class Config(object):
         self.segments_list_file_name = 'segments_list.txt'
         self.connection_timeout = 5
         self.approx_secs_per_video_segment = 10.0
-        self.delay_between_requests_in_secs = 0.2  # ethical
+        self.delay_between_requests_in_secs = 1.1  # ethical
 
 
 config = Config()
