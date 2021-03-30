@@ -1,39 +1,23 @@
-# See:
-# https://github.com/Zulko/moviepy/issues/876 and
-# https://github.com/biojet1/moviepy/commit/071297e14a17d60132fee23f846af5437596c68c
-
 import os
 import time
 import shutil
 import urllib.request
-import moviepy.editor
-from base64 import b64encode
+from progress.bar import Bar
 from typing import List, Optional
-from IPython.display import HTML, display
-
-
-def progress(value, max_value):
-    return HTML("""
-        <progress
-            value='{value}'
-            max='{max_value}',
-            style='width: 600px'
-        >
-            {value}
-        </progress>
-    """.format(value=value, max_value=max_value))
 
 
 class Config(object):
 
     __slots__ = [
-        'downloads_dir_path', 'tmp_dir_path', 'connection_timeout',
-        'approx_secs_per_video_segment', 'delay_between_requests_in_secs'
+        'downloads_dir_path', 'tmp_dir_path', 'segments_list_file_name',
+        'connection_timeout', 'approx_secs_per_video_segment',
+        'delay_between_requests_in_secs'
     ]
 
     def __init__(self):
         self.downloads_dir_path = 'downloads'
         self.tmp_dir_path = 'tmp'
+        self.segments_list_file_name = 'segments_list.txt'
         self.connection_timeout = 5
         self.approx_secs_per_video_segment = 10.0
         self.delay_between_requests_in_secs = 0.2  # ethical
@@ -102,9 +86,9 @@ def read_integer() -> int:
 def read_date() -> Date:
     print('Input download year (e.g. 2021):', end=' ')
     year = read_integer()
-    print('Input download month (e.g. 2):', end=' ')
+    print('Input download month (e.g. 3):', end=' ')
     month = read_integer()
-    print('Input download day (e.g. 24):', end=' ')
+    print('Input download day (e.g. 29):', end=' ')
     day = read_integer()
     return Date(year, month, day)
 
@@ -115,8 +99,8 @@ def is_downloaded_check(date: Date) -> bool:
 
 
 def get_base_url(date: Date) -> str:
-    # return f'https://videostream.skai.gr/skaivod/_definst_/mp4:skai/GrCyTargeting/Gr/Survivor/survivor{date.year}{date.month}{date.day}xxxx.mp4/media_'
-    return f'https://videostream.skai.gr/skaivod/_definst_/mp4:skai/GrCyTargeting/Gr/Survivor/ntafy{date.year}{date.month}{date.day}.mp4/media_'
+    return f'https://videostream.skai.gr/skaivod/_definst_/mp4:skai/GrCyTargeting/Gr/Survivor/survivor{date.year}{date.month}{date.day}.mp4/media_'
+    # return f'https://videostream.skai.gr/skaivod/_definst_/mp4:skai/GrCyTargeting/Gr/Survivor/ntafy{date.year}{date.month}{date.day}.mp4/media_'
 
 
 def download_video_segment(base_url: str, video_segment_id: int) -> Optional[bytes]:
@@ -165,13 +149,7 @@ def get_approx_secs_by_num_video_segments(num_video_segments: int) -> float:
 
 def is_video_segment_downloaded_check(date: Date, video_segment_id: int) -> bool:
     video_ts_file_path = f'{config.tmp_dir_path}/{date.year}_{date.month}_{date.day}/ts/{video_segment_id}.ts'
-    video_mp4_file_path = f'{config.tmp_dir_path}/{date.year}_{date.month}_{date.day}/mp4/{video_segment_id}.mp4'
-    return (os.path.isfile(video_ts_file_path) or os.path.isfile(video_mp4_file_path))
-
-
-def is_video_segment_converted_check(date: Date, video_segment_id: int) -> bool:
-    video_mp4_file_path = f'{config.tmp_dir_path}/{date.year}_{date.month}_{date.day}/mp4/{video_segment_id}.mp4'
-    return os.path.isfile(video_mp4_file_path)
+    return os.path.isfile(video_ts_file_path)
 
 
 def get_video_segments_ids_to_download(date: Date, num_video_segments: int) -> List[int]:
@@ -182,19 +160,9 @@ def get_video_segments_ids_to_download(date: Date, num_video_segments: int) -> L
     ]
 
 
-def get_video_segments_ids_to_convert(date: Date, num_video_segments: int) -> List[int]:
-    return [
-        video_segment_id
-        for video_segment_id in range(num_video_segments)
-        if not is_video_segment_converted_check(date, video_segment_id)
-    ]
-
-
 def create_tmp_dirs(date: Date) -> None:
     video_ts_files_dir = f'{config.tmp_dir_path}/{date.year}_{date.month}_{date.day}/ts'
-    video_mp4_files_dir = f'{config.tmp_dir_path}/{date.year}_{date.month}_{date.day}/mp4'
     os.makedirs(video_ts_files_dir, exist_ok=True)
-    os.makedirs(video_mp4_files_dir, exist_ok=True)
 
 
 def save_video_segment(date: Date, video_segment_id: int, video_segment_data: bytes) -> None:
@@ -203,39 +171,27 @@ def save_video_segment(date: Date, video_segment_id: int, video_segment_data: by
         fp.write(video_segment_data)
 
 
-def convert_video_segment(date: Date, video_segment_id: int) -> None:
-    video_ts_files_dir = f'{config.tmp_dir_path}/{date.year}_{date.month}_{date.day}/ts'
-    video_mp4_files_dir = f'{config.tmp_dir_path}/{date.year}_{date.month}_{date.day}/mp4'
-    video_ts_file_path = f'{video_ts_files_dir}/{video_segment_id}.ts'
-    video_mp4_file_path = f'{video_mp4_files_dir}/{video_segment_id}.mp4'
-    os.system(f'ffmpeg -i {video_ts_file_path} {video_mp4_file_path} >{config.tmp_dir_path}/cmd_out.txt 2>&1')
-
-
 def create_download_dir(date: Date) -> None:
     video_file_dir = f'{config.downloads_dir_path}/{date.year}_{date.month}_{date.day}'
     os.makedirs(video_file_dir, exist_ok=True)
 
 
 def merge_video_segments(date: Date, num_video_segments: int) -> None:
-    video_mp4_files_dir = f'{config.tmp_dir_path}/{date.year}_{date.month}_{date.day}/mp4'
-    video_segments_as_clips = [
-        moviepy.editor.VideoFileClip(f'{video_mp4_files_dir}/{video_segment_id}.mp4')
+    video_ts_files_dir = f'{config.tmp_dir_path}/{date.year}_{date.month}_{date.day}/ts'
+    input_args = [
+        f'file \'ts/{video_segment_id}.ts\''
         for video_segment_id in range(num_video_segments)
     ]
-    video_as_clip = moviepy.editor.concatenate_videoclips(video_segments_as_clips)
+    segments_list_file_path = f'{config.tmp_dir_path}/{date.year}_{date.month}_{date.day}/{config.segments_list_file_name}'
+    with open(segments_list_file_path, 'w') as fp:
+        fp.write('\n'.join(input_args))
     video_file_path = f'{config.downloads_dir_path}/{date.year}_{date.month}_{date.day}/video.mp4'
-    video_as_clip.to_videofile(video_file_path, fps=24, remove_temp=False)
+    os.system(f'ffmpeg -safe 0 -f concat -i {segments_list_file_path} -c copy {video_file_path}')
 
 
-def delete_tmp_dir(date: Date) -> None:
-    video_tmp_dir_path = f'{config.tmp_dir_path}/{date.year}_{date.month}_{date.day}'
-    shutil.rmtree(video_tmp_dir_path)
-
-
-def delete_tmp_audio_files() -> None:
-    for file_name in os.listdir():
-        if file_name.endswith('.mp3') and file_name.startswith('videoTEMP'):
-            os.remove(file_name)
+# def delete_tmp_dir(date: Date) -> None:
+#     video_tmp_dir_path = f'{config.tmp_dir_path}/{date.year}_{date.month}_{date.day}'
+#     shutil.rmtree(video_tmp_dir_path)
 
 
 def download_video(date: Date) -> None:
@@ -256,38 +212,30 @@ def download_video(date: Date) -> None:
     create_tmp_dirs(date)
     print('Downloading video\'s segments...')
     video_segments_ids_to_download = get_video_segments_ids_to_download(date, num_video_segments)
-    download_progress_bar = display(progress(0, len(video_segments_ids_to_download) - 1), display_id=True)
+    bar = Bar('Processing', max=len(video_segments_ids_to_download))
     for progress_idx, video_segment_id in enumerate(video_segments_ids_to_download):
         video_segment_data = download_video_segment(base_url, video_segment_id)
         if video_segment_data is None:
             print('An error happened while downloading a video\' segment. Please try again in a few minutes. If this error persists please contact the app developer.')
             exit(1)
         save_video_segment(date, video_segment_id, video_segment_data)
-        download_progress_bar.update(progress(progress_idx + 1, len(video_segments_ids_to_download) - 1))
+        bar.next()
+    bar.finish()
     print('Video\'s segments downloaded.')
     print()
-    print('Converting video\'s segments...')
-    video_segments_ids_to_convert = get_video_segments_ids_to_convert(date, num_video_segments)
-    conversion_progress_bar = display(progress(0, len(video_segments_ids_to_download) - 1), display_id=True)
-    for progress_idx, video_segment_id in enumerate(video_segments_ids_to_convert):
-        convert_video_segment(date, video_segment_id)
-        conversion_progress_bar.update(progress(progress_idx + 1, len(video_segments_ids_to_download) - 1))
-    print('Video\'s segments converted.')
-    print()
-    print('Merging video\'s segments...')
+    print('Merging video\'s segments.')
     create_download_dir(date)
     merge_video_segments(date, num_video_segments)
     print('Video\'s segments merged.')
     print()
-    print('Deleting useless files...')
+    # print('Deleting useless files...')
     # delete_tmp_dir(date)
-    delete_tmp_audio_files()
-    print('Useless files deleted.')
-    # print()
+    # print('Useless files deleted.')
+    print()
     print('Video is ready to play!')
-    #video_dir_path = f'{config.downloads_dir_path}/{date.year}_{date.month}_{date.day}'
-    #video_dir_abs_path = os.path.abspath(video_dir_path)
-    # os.startfile(video_dir_abs_path)
+    video_dir_path = f'{config.downloads_dir_path}/{date.year}_{date.month}_{date.day}'
+    video_dir_abs_path = os.path.abspath(video_dir_path)
+    os.startfile(video_dir_abs_path)
 
 
 def interact():
